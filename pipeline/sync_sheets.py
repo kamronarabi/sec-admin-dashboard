@@ -71,10 +71,12 @@ def sync():
 
         # --- Read events sheet ---
         events_sheet = sheet_names[0]  # First sheet is always the events list
+        # Only read the header + first 20 data rows to avoid picking up
+        # non-event content further down the sheet (e.g. ads, labels).
         events_result = (
             service.spreadsheets()
             .values()
-            .get(spreadsheetId=SPREADSHEET_ID, range=f"'{events_sheet}'!A:Z")
+            .get(spreadsheetId=SPREADSHEET_ID, range=f"'{events_sheet}'!A1:Z21")
             .execute()
         )
         events_rows = events_result.get("values", [])
@@ -85,12 +87,12 @@ def sync():
         event_map = {}  # sheet_name -> event db id
         if len(events_rows) > 1:  # skip header
             for row in events_rows[1:]:
-                if not row:
-                    continue
-                title = row[0].strip() if len(row) > 0 else ""
-                date = row[1].strip() if len(row) > 1 else None
-                etype = row[2].strip() if len(row) > 2 else "meeting"
-                location = row[3].strip() if len(row) > 3 else None
+                if not row or len(row) < 3 or not row[2].strip():
+                    break  # Stop at first row with no event title (col C)
+                title = row[2].strip() if len(row) > 2 else None
+                date = row[0].strip() if len(row) > 0 else None
+                etype = row[4].strip() if len(row) > 4 else "meeting"
+                location = row[5].strip() if len(row) > 5 else None
 
                 if not title:
                     continue
@@ -132,20 +134,9 @@ def sync():
                         event_id = eid
                         break
             if event_id is None:
-                # Sheet doesn't correspond to a known event, create one
-                cursor = db.execute(
-                    """INSERT OR IGNORE INTO events (title, source_sheet)
-                       VALUES (?, ?)""",
-                    (sheet_name, sheet_name),
-                )
-                if cursor.lastrowid:
-                    event_id = cursor.lastrowid
-                    created += 1
-                else:
-                    event_id = db.execute(
-                        "SELECT id FROM events WHERE title = ?", (sheet_name,)
-                    ).fetchone()["id"]
-                db.commit()
+                # Sheet doesn't correspond to a known event — skip it
+                print(f"  Skipping sheet '{sheet_name}' (no matching event)")
+                continue
 
             # Read attendance data
             att_result = (
@@ -166,7 +157,7 @@ def sync():
             for i, h in enumerate(header):
                 if "name" in h and name_col is None:
                     name_col = i
-                if "email" in h or "e-mail" in h:
+                if "email" in h or "UFL email" in h:
                     email_col = i
 
             if email_col is None:
@@ -182,6 +173,19 @@ def sync():
                     continue
 
                 name = row[name_col].strip() if name_col is not None and len(row) > name_col else email.split("@")[0]
+
+                # Normalize to @ufl.edu — if wrong domain, try matching
+                # an existing member by email prefix, otherwise discard
+                if not email.endswith("@ufl.edu"):
+                    prefix = email.split("@")[0]
+                    match = db.execute(
+                        "SELECT id FROM members WHERE email = ?",
+                        (f"{prefix}@ufl.edu",),
+                    ).fetchone()
+                    if match:
+                        email = f"{prefix}@ufl.edu"
+                    else:
+                        continue  # No matching @ufl.edu member, discard
 
                 # Upsert member
                 existing_member = db.execute(

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Member, AttendanceRecord } from "@/lib/types";
 
-type SortKey = "name" | "email" | "events_attended" | "role" | "join_date" | "last_active" | "status";
+type SortKey = "name" | "email" | "events_attended" | "role" | "status";
 
 export function MembersTable() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -152,8 +152,6 @@ export function MembersTable() {
               <SortableHead label="Email" sortKey="email" />
               <SortableHead label="Events" sortKey="events_attended" />
               <SortableHead label="Role" sortKey="role" />
-              <SortableHead label="Joined" sortKey="join_date" />
-              <SortableHead label="Last Active" sortKey="last_active" />
               <SortableHead label="Status" sortKey="status" />
               <TableHead className="w-12" />
             </TableRow>
@@ -161,7 +159,7 @@ export function MembersTable() {
           <TableBody>
             {members.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No members found. Data will appear after the first pipeline sync.
                 </TableCell>
               </TableRow>
@@ -213,8 +211,6 @@ export function MembersTable() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm">{m.join_date}</TableCell>
-                  <TableCell className="text-sm">{m.last_active}</TableCell>
                   <TableCell>
                     <Badge
                       variant={m.status === "active" ? "default" : "secondary"}
