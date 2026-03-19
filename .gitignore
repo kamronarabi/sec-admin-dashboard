@@ -50,3 +50,6 @@ pipeline/venv/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pipeline
+pipeline/service-account.json
