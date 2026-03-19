@@ -55,22 +55,22 @@ function useElapsedTime(sinceMs: number | null) {
 
 function parseUtcToMs(utc: string | null): number | null {
   if (!utc) return null;
-  return new Date(utc + "Z").getTime();
+  // SQLite datetime format is "YYYY-MM-DD HH:MM:SS" — replace space with T for valid ISO 8601
+  const iso = utc.replace(" ", "T") + "Z";
+  const ms = new Date(iso).getTime();
+  return Number.isNaN(ms) ? null : ms;
 }
 
 function PipelineCard({
   pipeline,
   onSync,
   syncing,
-  syncedAtMs,
 }: {
   pipeline: PipelineStatus;
   onSync?: () => void;
   syncing?: boolean;
-  syncedAtMs?: number | null;
 }) {
-  const apiMs = parseUtcToMs(pipeline.lastSuccessAt);
-  const sinceMs = syncedAtMs ?? apiMs;
+  const sinceMs = parseUtcToMs(pipeline.lastSuccessAt);
   const elapsed = useElapsedTime(sinceMs);
 
   const getHealthStatus = () => {
@@ -142,10 +142,9 @@ const SYNCABLE_SOURCES = new Set(["google_sheets"]);
 export function PipelineMonitor() {
   const [pipelines, setPipelines] = useState<PipelineStatus[]>([]);
   const [syncing, setSyncing] = useState<string | null>(null);
-  const [syncedAt, setSyncedAt] = useState<Record<string, number>>({});
 
   const fetchPipelines = useCallback(async () => {
-    const res = await fetch("/api/pipelines");
+    const res = await fetch("/api/pipelines", { cache: "no-store" });
     if (res.ok) setPipelines(await res.json());
   }, []);
 
@@ -160,26 +159,29 @@ export function PipelineMonitor() {
       setSyncing(source);
       try {
         const res = await fetch("/api/pipelines/sync", { method: "POST" });
-        const now = Date.now();
-        setSyncedAt((prev) => ({ ...prev, [source]: now }));
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.latest) {
-            setPipelines((prev) =>
-              prev.map((p) =>
-                p.source === source
-                  ? { ...p, latest: data.latest, lastSuccessAt: data.latest.completed_at }
-                  : p
-              )
-            );
-          }
+        if (!res.ok) {
+          console.error("Sync failed:", res.status);
+          return;
         }
+        const data = await res.json();
+        if (data.latest) {
+          setPipelines((prev) =>
+            prev.map((p) =>
+              p.source === source
+                ? { ...p, latest: data.latest, lastSuccessAt: data.latest.completed_at }
+                : p
+            )
+          );
+        }
+        // Re-fetch to ensure UI matches DB state
+        await fetchPipelines();
+      } catch (err) {
+        console.error("Sync error:", err);
       } finally {
         setSyncing(null);
       }
     },
-    []
+    [fetchPipelines]
   );
 
   return (
@@ -194,7 +196,6 @@ export function PipelineMonitor() {
               : undefined
           }
           syncing={syncing === p.source}
-          syncedAtMs={syncedAt[p.source]}
         />
       ))}
     </div>

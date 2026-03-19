@@ -15,6 +15,7 @@ export async function POST() {
   const pythonPath = path.join(pipelineDir, ".venv", "bin", "python3");
 
   try {
+    console.log("[sync] Running pipeline:", pythonPath, scriptPath);
     const result = await new Promise<{ stdout: string; stderr: string }>(
       (resolve, reject) => {
         execFile(
@@ -23,12 +24,18 @@ export async function POST() {
           {
             cwd: path.join(process.cwd(), "pipeline"),
             timeout: 60_000,
-            env: { ...process.env },
+            env: {
+              ...process.env,
+              // Resolve DATABASE_PATH to absolute so it's correct regardless of cwd
+              DATABASE_PATH: path.resolve(process.env.DATABASE_PATH || "./data/sec-dashboard.db"),
+            },
           },
           (error, stdout, stderr) => {
             if (error) {
+              console.error("[sync] Script error:", error.message, stderr);
               reject({ error, stdout, stderr });
             } else {
+              console.log("[sync] Script output:", stdout.trim());
               resolve({ stdout, stderr });
             }
           }
