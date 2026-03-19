@@ -43,6 +43,7 @@ yarn-error.log*
 __pycache__/
 *.pyc
 pipeline/venv/
+pipeline/.venv/
 
 # vercel
 .vercel
@@ -53,3 +54,7 @@ next-env.d.ts
 
 # pipeline
 pipeline/service-account.json
+
+# claude
+CLAUDE.md
+.claude/

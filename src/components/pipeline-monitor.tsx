@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface PipelineStatus {
   source: string;
@@ -25,19 +26,17 @@ const LABELS: Record<string, string> = {
   github: "GitHub",
 };
 
-function useElapsedTime(since: string | null) {
+function useElapsedTime(sinceMs: number | null) {
   const [elapsed, setElapsed] = useState("");
 
   useEffect(() => {
-    if (!since) {
+    if (!sinceMs) {
       setElapsed("Never synced");
       return;
     }
 
     const update = () => {
-      const diff = Date.now() - new Date(since + "Z").getTime();
-      if (diff < 0) { setElapsed("just now"); return; }
-      const seconds = Math.floor(diff / 1000);
+      const seconds = Math.max(0, Math.floor((Date.now() - sinceMs) / 1000));
       const minutes = Math.floor(seconds / 60);
       const hours = Math.floor(minutes / 60);
 
@@ -49,13 +48,30 @@ function useElapsedTime(since: string | null) {
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [since]);
+  }, [sinceMs]);
 
   return elapsed;
 }
 
-function PipelineCard({ pipeline }: { pipeline: PipelineStatus }) {
-  const elapsed = useElapsedTime(pipeline.lastSuccessAt);
+function parseUtcToMs(utc: string | null): number | null {
+  if (!utc) return null;
+  return new Date(utc + "Z").getTime();
+}
+
+function PipelineCard({
+  pipeline,
+  onSync,
+  syncing,
+  syncedAtMs,
+}: {
+  pipeline: PipelineStatus;
+  onSync?: () => void;
+  syncing?: boolean;
+  syncedAtMs?: number | null;
+}) {
+  const apiMs = parseUtcToMs(pipeline.lastSuccessAt);
+  const sinceMs = syncedAtMs ?? apiMs;
+  const elapsed = useElapsedTime(sinceMs);
 
   const getHealthStatus = () => {
     if (!pipeline.latest) return { label: "No Data", color: "bg-gray-400" };
@@ -82,7 +98,9 @@ function PipelineCard({ pipeline }: { pipeline: PipelineStatus }) {
       <CardContent className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Last Sync</span>
-          <span className="font-mono tabular-nums">{elapsed}</span>
+          <span className="font-mono tabular-nums">
+            {syncing ? "Syncing..." : elapsed}
+          </span>
         </div>
         {pipeline.latest && (
           <>
@@ -103,13 +121,28 @@ function PipelineCard({ pipeline }: { pipeline: PipelineStatus }) {
             )}
           </>
         )}
+        {onSync && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mt-2"
+            disabled={syncing}
+            onClick={onSync}
+          >
+            {syncing ? "Syncing..." : "Sync Now"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
 }
 
+const SYNCABLE_SOURCES = new Set(["google_sheets"]);
+
 export function PipelineMonitor() {
   const [pipelines, setPipelines] = useState<PipelineStatus[]>([]);
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const [syncedAt, setSyncedAt] = useState<Record<string, number>>({});
 
   const fetchPipelines = useCallback(async () => {
     const res = await fetch("/api/pipelines");
@@ -122,10 +155,47 @@ export function PipelineMonitor() {
     return () => clearInterval(interval);
   }, [fetchPipelines]);
 
+  const handleSync = useCallback(
+    async (source: string) => {
+      setSyncing(source);
+      try {
+        const res = await fetch("/api/pipelines/sync", { method: "POST" });
+        const now = Date.now();
+        setSyncedAt((prev) => ({ ...prev, [source]: now }));
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.latest) {
+            setPipelines((prev) =>
+              prev.map((p) =>
+                p.source === source
+                  ? { ...p, latest: data.latest, lastSuccessAt: data.latest.completed_at }
+                  : p
+              )
+            );
+          }
+        }
+      } finally {
+        setSyncing(null);
+      }
+    },
+    []
+  );
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {pipelines.map((p) => (
-        <PipelineCard key={p.source} pipeline={p} />
+        <PipelineCard
+          key={p.source}
+          pipeline={p}
+          onSync={
+            SYNCABLE_SOURCES.has(p.source)
+              ? () => handleSync(p.source)
+              : undefined
+          }
+          syncing={syncing === p.source}
+          syncedAtMs={syncedAt[p.source]}
+        />
       ))}
     </div>
   );
