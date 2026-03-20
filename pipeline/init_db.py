@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS action_items (
     description TEXT,
     source TEXT DEFAULT 'manual' CHECK(source IN ('manual', 'ai')),
     status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'done', 'dismissed')),
+    priority TEXT DEFAULT 'medium' CHECK(priority IN ('high', 'medium', 'low')),
     due_date TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))

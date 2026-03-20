@@ -45,6 +45,7 @@ export interface ActionItem {
   description: string | null;
   source: string;
   status: string;
+  priority: "high" | "medium" | "low";
   due_date: string | null;
   created_at: string;
   updated_at: string;

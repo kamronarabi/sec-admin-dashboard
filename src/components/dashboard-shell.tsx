@@ -1,53 +1,83 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { signOut } from "next-auth/react";
-import { cn } from "@/lib/utils";
-
-const navItems = [
-  { label: "Overview", href: "/" },
-  { label: "Members", href: "/members" },
-  { label: "Events", href: "/events" },
-  { label: "Pipelines", href: "/pipelines" },
-  { label: "Action Items", href: "/actions" },
-];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
   return (
-    <div className="flex h-screen">
-      <aside className="w-56 border-r bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <h1 className="font-bold text-lg">SEC Dashboard</h1>
-        </div>
-        <nav className="flex-1 p-2 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "block px-3 py-2 rounded-md text-sm transition-colors",
-                pathname === item.href
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              )}
+    <div
+      className="flex flex-col h-screen"
+      style={{
+        background:
+          "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(33,150,243,0.06) 0%, transparent 60%), #0f0f1a",
+      }}
+    >
+      {/* Header bar */}
+      <header
+        className="relative flex items-center justify-between px-5 py-2.5 shrink-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        {/* Azure accent line at very top */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[1px]"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent 5%, rgba(33,150,243,0.5) 30%, rgba(66,165,245,0.7) 50%, rgba(33,150,243,0.5) 70%, transparent 95%)",
+          }}
+        />
+
+        <div className="flex items-center gap-3">
+          <div style={{ filter: "drop-shadow(0 0 12px rgba(33,150,243,0.25))" }}>
+            <Image src="/SECLOGO.png" alt="SEC Logo" width={28} height={28} />
+          </div>
+          <div className="flex items-center gap-2">
+            <h1
+              className="font-semibold text-sm tracking-wide"
+              style={{ color: "rgba(255,255,255,0.9)" }}
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-2 border-t">
-          <button
-            onClick={() => signOut()}
-            className="w-full px-3 py-2 text-sm text-left rounded-md hover:bg-muted transition-colors"
-          >
-            Sign Out
-          </button>
+              SEC Admin
+            </h1>
+            <span
+              className="text-[10px] tracking-[0.2em] uppercase px-2 py-0.5 rounded-full"
+              style={{
+                color: "rgba(33,150,243,0.8)",
+                background: "rgba(33,150,243,0.08)",
+                border: "1px solid rgba(33,150,243,0.15)",
+              }}
+            >
+              Dashboard
+            </span>
+          </div>
         </div>
-      </aside>
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+
+        <button
+          onClick={() => signOut()}
+          className="px-3 py-1.5 text-[11px] rounded-md transition-all duration-200 cursor-pointer"
+          style={{
+            color: "rgba(255,255,255,0.45)",
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "rgba(255,255,255,0.8)";
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+            e.currentTarget.style.background = "transparent";
+          }}
+        >
+          Sign Out
+        </button>
+      </header>
+
+      {/* Content */}
+      <main className="flex-1 overflow-hidden p-4">{children}</main>
     </div>
   );
 }

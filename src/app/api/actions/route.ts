@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { title, description, due_date } = await req.json();
+  const { title, description, due_date, priority } = await req.json();
   if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
   const db = getDb();
   const result = db
-    .prepare("INSERT INTO action_items (title, description, due_date) VALUES (?, ?, ?)")
-    .run(title, description || null, due_date || null);
+    .prepare("INSERT INTO action_items (title, description, due_date, priority) VALUES (?, ?, ?, ?)")
+    .run(title, description || null, due_date || null, priority || "medium");
 
   const item = db.prepare("SELECT * FROM action_items WHERE id = ?").get(result.lastInsertRowid);
   return NextResponse.json(item, { status: 201 });
@@ -35,11 +35,16 @@ export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id, status } = await req.json();
-  if (!id || !status) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const { id, status, priority } = await req.json();
+  if (!id) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
   const db = getDb();
-  db.prepare("UPDATE action_items SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
+  if (status) {
+    db.prepare("UPDATE action_items SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
+  }
+  if (priority) {
+    db.prepare("UPDATE action_items SET priority = ?, updated_at = datetime('now') WHERE id = ?").run(priority, id);
+  }
 
   const item = db.prepare("SELECT * FROM action_items WHERE id = ?").get(id);
   return NextResponse.json(item);

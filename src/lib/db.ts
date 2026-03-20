@@ -19,7 +19,16 @@ export function getDb(): Database.Database {
   db.pragma("foreign_keys = ON");
 
   initializeSchema(db);
+  runMigrations(db);
   return db;
+}
+
+function runMigrations(db: Database.Database) {
+  // Add priority column to action_items if it doesn't exist
+  const cols = db.prepare("PRAGMA table_info(action_items)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "priority")) {
+    db.exec("ALTER TABLE action_items ADD COLUMN priority TEXT DEFAULT 'medium'");
+  }
 }
 
 function initializeSchema(db: Database.Database) {
@@ -79,6 +88,7 @@ function initializeSchema(db: Database.Database) {
       description TEXT,
       source TEXT DEFAULT 'manual' CHECK(source IN ('manual', 'ai')),
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'done', 'dismissed')),
+      priority TEXT DEFAULT 'medium' CHECK(priority IN ('high', 'medium', 'low')),
       due_date TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))

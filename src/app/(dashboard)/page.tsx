@@ -1,33 +1,65 @@
-import { getDb } from "@/lib/db";
-import { OverviewCards } from "@/components/overview-cards";
+"use client";
 
-function getStats() {
-  const db = getDb();
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+import { PipelineWidget } from "@/components/widgets/pipeline-widget";
+import { MembersWidget } from "@/components/widgets/members-widget";
+import { EventsWidget } from "@/components/widgets/events-widget";
+import { ActionItemsWidget } from "@/components/widgets/action-items-widget";
 
-  const totalMembers = db.prepare("SELECT COUNT(*) as count FROM members WHERE status = 'active'").get() as { count: number };
-  const totalEvents = db.prepare("SELECT COUNT(*) as count FROM events").get() as { count: number };
-  const eventsThisMonth = db.prepare("SELECT COUNT(*) as count FROM events WHERE date >= ?").get(monthStart) as { count: number };
-  const newMembersThisMonth = db.prepare("SELECT COUNT(*) as count FROM members WHERE join_date >= ?").get(monthStart) as { count: number };
-  const avgAttendance = db.prepare("SELECT COALESCE(AVG(attendance_count), 0) as avg FROM events WHERE attendance_count > 0").get() as { avg: number };
-
-  return {
-    totalMembers: totalMembers.count,
-    totalEvents: totalEvents.count,
-    eventsThisMonth: eventsThisMonth.count,
-    newMembersThisMonth: newMembersThisMonth.count,
-    avgAttendance: Math.round(avgAttendance.avg),
-  };
+function GlassPanel({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`relative rounded-lg overflow-hidden ${className}`}
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow:
+          "0 0 30px rgba(33,150,243,0.03), 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)",
+      }}
+    >
+      {/* Top accent line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[1px]"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 10%, rgba(33,150,243,0.25) 50%, transparent 90%)",
+        }}
+      />
+      <div className="p-3 h-full">{children}</div>
+    </div>
+  );
 }
 
-export default function OverviewPage() {
-  const stats = getStats();
-
+export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Dashboard Overview</h2>
-      <OverviewCards stats={stats} />
+    <div className="h-full grid grid-cols-[280px_1fr_320px] grid-rows-[auto_1fr] gap-3">
+      {/* Top-left: Pipelines — compact */}
+      <GlassPanel>
+        <PipelineWidget />
+      </GlassPanel>
+
+      {/* Top-center + right: Events — spans 2 cols, capped height */}
+      <GlassPanel className="col-span-2 max-h-[38vh]">
+        <EventsWidget />
+      </GlassPanel>
+
+      {/* Bottom-left + center: Members — spans 2 cols */}
+      <GlassPanel className="col-span-2">
+        <MembersWidget />
+      </GlassPanel>
+
+      {/* Bottom-right: Action Items */}
+      <GlassPanel>
+        <ActionItemsWidget />
+      </GlassPanel>
     </div>
   );
 }
