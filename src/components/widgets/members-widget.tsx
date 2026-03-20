@@ -28,15 +28,27 @@ export function MembersWidget() {
   } | null>(null);
   const [editValue, setEditValue] = useState("");
 
+  const [sortBy, setSortBy] = useState<"name" | "events_attended">("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (col: "name" | "events_attended") => {
+    if (sortBy === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(col);
+      setSortDir(col === "events_attended" ? "desc" : "asc");
+    }
+  };
+
   const fetchMembers = useCallback(async () => {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
-    params.set("sortBy", "name");
-    params.set("sortDir", "asc");
+    params.set("sortBy", sortBy);
+    params.set("sortDir", sortDir);
     const res = await fetch(`/api/members?${params}`);
     if (res.ok) setMembers(await res.json());
     setLoading(false);
-  }, [search]);
+  }, [search, sortBy, sortDir]);
 
   useEffect(() => {
     fetchMembers();
@@ -124,10 +136,11 @@ export function MembersWidget() {
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
               <th
-                className="text-left text-[10px] font-semibold uppercase tracking-wider py-1.5 pr-3"
-                style={{ color: "rgba(255,255,255,0.35)" }}
+                className="text-left text-[10px] font-semibold uppercase tracking-wider py-1.5 pr-3 cursor-pointer select-none"
+                style={{ color: sortBy === "name" ? "rgba(33,150,243,0.8)" : "rgba(255,255,255,0.35)" }}
+                onClick={() => toggleSort("name")}
               >
-                Name
+                Name {sortBy === "name" ? (sortDir === "asc" ? "↑" : "↓") : ""}
               </th>
               <th
                 className="text-left text-[10px] font-semibold uppercase tracking-wider py-1.5 pr-3"
@@ -136,10 +149,11 @@ export function MembersWidget() {
                 Email
               </th>
               <th
-                className="text-center text-[10px] font-semibold uppercase tracking-wider py-1.5 w-16"
-                style={{ color: "rgba(255,255,255,0.35)" }}
+                className="text-center text-[10px] font-semibold uppercase tracking-wider py-1.5 w-16 cursor-pointer select-none"
+                style={{ color: sortBy === "events_attended" ? "rgba(33,150,243,0.8)" : "rgba(255,255,255,0.35)" }}
+                onClick={() => toggleSort("events_attended")}
               >
-                Events
+                Events {sortBy === "events_attended" ? (sortDir === "asc" ? "↑" : "↓") : ""}
               </th>
               <th className="w-8" />
             </tr>

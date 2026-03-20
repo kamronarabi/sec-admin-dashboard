@@ -9,7 +9,7 @@ export async function GET() {
 
   const db = getDb();
   const events = db
-    .prepare("SELECT * FROM events ORDER BY date DESC")
+    .prepare("SELECT * FROM events ORDER BY date ASC")
     .all();
 
   return NextResponse.json(events);

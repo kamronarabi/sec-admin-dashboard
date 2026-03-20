@@ -29,7 +29,6 @@ export function ActionItemsWidget() {
   const [newTitle, setNewTitle] = useState("");
   const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   const fetchItems = useCallback(async () => {
     const res = await fetch("/api/actions");
@@ -63,9 +62,6 @@ export function ActionItemsWidget() {
       body: JSON.stringify({ id, status: "done" }),
     });
     fetchItems();
-    if (currentIndex > 0 && currentIndex >= items.length - 1) {
-      setCurrentIndex(currentIndex - 1);
-    }
   };
 
   const dismissItem = async (id: number) => {
@@ -75,18 +71,7 @@ export function ActionItemsWidget() {
       body: JSON.stringify({ id, status: "dismissed" }),
     });
     fetchItems();
-    if (currentIndex > 0 && currentIndex >= items.length - 1) {
-      setCurrentIndex(currentIndex - 1);
-    }
   };
-
-  const prev = () => setCurrentIndex((i) => Math.max(0, i - 1));
-  const next = () => setCurrentIndex((i) => Math.min(items.length - 1, i + 1));
-
-  const current = items[currentIndex];
-  const pStyle = current
-    ? PRIORITY_STYLES[current.priority] || PRIORITY_STYLES.medium
-    : PRIORITY_STYLES.medium;
 
   return (
     <div className="h-full flex flex-col gap-2">
@@ -109,8 +94,8 @@ export function ActionItemsWidget() {
         </span>
       </div>
 
-      {/* Carousel */}
-      <div className="flex-1 min-h-0 flex flex-col">
+      {/* Stack */}
+      <div className="flex-1 min-h-0 overflow-auto flex flex-col gap-1.5">
         {loading ? (
           <div
             className="flex-1 flex items-center justify-center text-[10px]"
@@ -126,139 +111,87 @@ export function ActionItemsWidget() {
             No pending items
           </div>
         ) : (
-          <>
-            <div
-              className="flex-1 flex flex-col justify-center rounded-md p-3 min-h-0 transition-all duration-300"
-              style={{
-                background: "rgba(255,255,255,0.02)",
-                border: `1px solid ${pStyle.border}`,
-                boxShadow: pStyle.glow,
-              }}
-            >
-              {current && (
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <p
-                      className="text-sm font-medium leading-tight"
-                      style={{ color: "rgba(255,255,255,0.85)" }}
-                    >
-                      {current.title}
-                    </p>
-                    <span
-                      className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold"
-                      style={{
-                        color: pStyle.color,
-                        background: pStyle.bg,
-                        border: `1px solid ${pStyle.border}`,
-                      }}
-                    >
-                      {current.priority}
-                    </span>
-                  </div>
-                  {current.due_date && (
-                    <p
-                      className="text-[10px] font-mono"
-                      style={{ color: "rgba(255,255,255,0.3)" }}
-                    >
-                      Due: {current.due_date}
-                    </p>
-                  )}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      className="text-[10px] px-2.5 py-1 rounded transition-all duration-200 cursor-pointer"
-                      style={{
-                        color: "rgba(76,175,80,0.8)",
-                        border: "1px solid rgba(76,175,80,0.2)",
-                        background: "rgba(76,175,80,0.06)",
-                      }}
-                      onClick={() => completeItem(current.id)}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background =
-                          "rgba(76,175,80,0.15)";
-                        e.currentTarget.style.borderColor =
-                          "rgba(76,175,80,0.4)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background =
-                          "rgba(76,175,80,0.06)";
-                        e.currentTarget.style.borderColor =
-                          "rgba(76,175,80,0.2)";
-                      }}
-                    >
-                      Done
-                    </button>
-                    <button
-                      className="text-[10px] px-2.5 py-1 rounded transition-all duration-200 cursor-pointer"
-                      style={{
-                        color: "rgba(255,255,255,0.35)",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        background: "transparent",
-                      }}
-                      onClick={() => dismissItem(current.id)}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background =
-                          "rgba(255,255,255,0.04)";
-                        e.currentTarget.style.color = "rgba(255,255,255,0.6)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "transparent";
-                        e.currentTarget.style.color = "rgba(255,255,255,0.35)";
-                      }}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Navigation dots */}
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <button
-                className="text-sm leading-none cursor-pointer transition-colors"
+          [...items].reverse().map((item) => {
+            const pStyle = PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.medium;
+            return (
+              <div
+                key={item.id}
+                className="rounded-md px-3 py-2 transition-all duration-300 shrink-0"
                 style={{
-                  color:
-                    currentIndex === 0
-                      ? "rgba(255,255,255,0.1)"
-                      : "rgba(255,255,255,0.4)",
+                  background: "rgba(255,255,255,0.02)",
+                  border: `1px solid ${pStyle.border}`,
+                  boxShadow: pStyle.glow,
                 }}
-                disabled={currentIndex === 0}
-                onClick={prev}
               >
-                ‹
-              </button>
-              <div className="flex gap-1">
-                {items.map((_, i) => (
-                  <button
-                    key={i}
-                    className="w-1 h-1 rounded-full cursor-pointer transition-all duration-200"
+                <div className="flex items-start justify-between gap-2">
+                  <p
+                    className="text-xs font-medium leading-tight"
+                    style={{ color: "rgba(255,255,255,0.85)" }}
+                  >
+                    {item.title}
+                  </p>
+                  <span
+                    className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold"
                     style={{
-                      background:
-                        i === currentIndex
-                          ? "#2196F3"
-                          : "rgba(255,255,255,0.15)",
-                      boxShadow:
-                        i === currentIndex ? "0 0 6px #2196F3" : "none",
+                      color: pStyle.color,
+                      background: pStyle.bg,
+                      border: `1px solid ${pStyle.border}`,
                     }}
-                    onClick={() => setCurrentIndex(i)}
-                  />
-                ))}
+                  >
+                    {item.priority}
+                  </span>
+                </div>
+                {item.due_date && (
+                  <p
+                    className="text-[10px] font-mono mt-1"
+                    style={{ color: "rgba(255,255,255,0.3)" }}
+                  >
+                    Due: {item.due_date}
+                  </p>
+                )}
+                <div className="flex gap-2 mt-1.5">
+                  <button
+                    className="text-[10px] px-2 py-0.5 rounded transition-all duration-200 cursor-pointer"
+                    style={{
+                      color: "rgba(76,175,80,0.8)",
+                      border: "1px solid rgba(76,175,80,0.2)",
+                      background: "rgba(76,175,80,0.06)",
+                    }}
+                    onClick={() => completeItem(item.id)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(76,175,80,0.15)";
+                      e.currentTarget.style.borderColor = "rgba(76,175,80,0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(76,175,80,0.06)";
+                      e.currentTarget.style.borderColor = "rgba(76,175,80,0.2)";
+                    }}
+                  >
+                    Done
+                  </button>
+                  <button
+                    className="text-[10px] px-2 py-0.5 rounded transition-all duration-200 cursor-pointer"
+                    style={{
+                      color: "rgba(255,255,255,0.35)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "transparent",
+                    }}
+                    onClick={() => dismissItem(item.id)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                      e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "rgba(255,255,255,0.35)";
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
-              <button
-                className="text-sm leading-none cursor-pointer transition-colors"
-                style={{
-                  color:
-                    currentIndex >= items.length - 1
-                      ? "rgba(255,255,255,0.1)"
-                      : "rgba(255,255,255,0.4)",
-                }}
-                disabled={currentIndex >= items.length - 1}
-                onClick={next}
-              >
-                ›
-              </button>
-            </div>
-          </>
+            );
+          })
         )}
       </div>
 

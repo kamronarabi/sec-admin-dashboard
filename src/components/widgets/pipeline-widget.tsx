@@ -18,6 +18,7 @@ interface PipelineStatus {
 const LABELS: Record<string, string> = {
   google_sheets: "Google Sheets",
   github: "GitHub",
+  gmail: "Gmail",
 };
 
 function timeAgo(utc: string | null): string {
@@ -26,9 +27,11 @@ function timeAgo(utc: string | null): string {
   const ms = Date.now() - new Date(iso).getTime();
   if (Number.isNaN(ms)) return "Never";
   const mins = Math.floor(ms / 60000);
+  const secs = Math.floor(ms / 1000);
   const hrs = Math.floor(mins / 60);
-  if (hrs > 0) return `${hrs}h ${mins % 60}m ago`;
-  if (mins > 0) return `${mins}m ago`;
+  if (hrs > 0) return `${hrs}h ${mins % 60}m ${secs % 60}s ago`;
+  if (mins > 0) return `${mins}m ${secs % 60}s ago`;
+  if (secs > 0) return `${secs}s ago`;
   return "Just now";
 }
 
@@ -40,14 +43,22 @@ export function PipelineWidget() {
     const res = await fetch("/api/pipelines", { cache: "no-store" });
     if (res.ok) {
       const data: PipelineStatus[] = await res.json();
-      setPipelines(data.filter((p) => p.source !== "discord"));
+      const filtered = data.filter((p) => p.source !== "discord");
+      // Ensure Gmail pipeline always appears
+      if (!filtered.find((p) => p.source === "gmail")) {
+        filtered.push({ source: "gmail", latest: null, lastSuccessAt: null });
+      }
+      setPipelines(filtered);
     }
   }, []);
 
+  // Force re-render every second so the seconds counter updates
+  const [, setTick] = useState(0);
   useEffect(() => {
     fetchPipelines();
-    const interval = setInterval(fetchPipelines, 30000);
-    return () => clearInterval(interval);
+    const dataInterval = setInterval(fetchPipelines, 30000);
+    const tickInterval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => { clearInterval(dataInterval); clearInterval(tickInterval); };
   }, [fetchPipelines]);
 
   const handleSync = useCallback(
