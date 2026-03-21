@@ -17,13 +17,33 @@ SERVICE_ACCOUNT_FILE = os.getenv(
     str(Path(__file__).parent / "service-account.json"),
 )
 
-# Google Sheets spreadsheet ID (from the URL)
-SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "")
-
 # SQLite database path
 DATABASE_PATH = os.getenv(
     "DATABASE_PATH",
     str(Path(__file__).parent.parent / "data" / "sec-dashboard.db"),
+)
+
+
+def get_config_from_db(source: str, key: str, fallback: str = "") -> str:
+    """Read a config value from the pipeline_config table, falling back to the given default."""
+    import sqlite3
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        row = conn.execute(
+            "SELECT config_value FROM pipeline_config WHERE source = ? AND config_key = ?",
+            (source, key),
+        ).fetchone()
+        conn.close()
+        if row and row[0]:
+            return row[0]
+    except Exception:
+        pass
+    return fallback
+
+
+# Google Sheets spreadsheet ID — check DB first, then env var
+SPREADSHEET_ID = get_config_from_db(
+    "google_sheets", "spreadsheet_id", os.getenv("SPREADSHEET_ID", "")
 )
 
 # The first sheet name that contains event metadata

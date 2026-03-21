@@ -72,11 +72,29 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS pipeline_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    config_key TEXT NOT NULL,
+    config_value TEXT,
+    updated_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(source, config_key)
+);
+
+CREATE TABLE IF NOT EXISTS sync_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sync_log_id INTEGER NOT NULL REFERENCES sync_logs(id) ON DELETE CASCADE,
+    table_name TEXT NOT NULL,
+    data TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_members_email ON members(email);
 CREATE INDEX IF NOT EXISTS idx_attendance_member ON attendance(member_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_event ON attendance(event_id);
 CREATE INDEX IF NOT EXISTS idx_sync_logs_source ON sync_logs(source);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
+CREATE INDEX IF NOT EXISTS idx_sync_snapshots_log ON sync_snapshots(sync_log_id);
 """
 
 

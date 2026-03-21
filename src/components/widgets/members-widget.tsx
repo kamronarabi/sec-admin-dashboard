@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -17,6 +19,7 @@ import {
 import type { Member, AttendanceRecord } from "@/lib/types";
 
 export function MembersWidget() {
+  const router = useRouter();
   const [members, setMembers] = useState<Member[]>([]);
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -89,10 +92,24 @@ export function MembersWidget() {
     <div className="h-full flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: "#2196F3", boxShadow: "0 0 8px #2196F3" }}
-          />
+          <button
+            onClick={() => router.push("/members")}
+            className="flex items-center justify-center w-5 h-5 rounded cursor-pointer transition-all duration-200"
+            style={{ background: "rgba(33,150,243,0.12)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(33,150,243,0.25)";
+              e.currentTarget.style.boxShadow = "0 0 12px rgba(33,150,243,0.4)";
+              e.currentTarget.style.transform = "scale(1.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(33,150,243,0.12)";
+              e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            title="Open Members"
+          >
+            <Users size={11} color="#2196F3" style={{ filter: "drop-shadow(0 0 4px #2196F3)" }} />
+          </button>
           <h3
             className="text-[11px] font-semibold uppercase tracking-[0.15em]"
             style={{ color: "rgba(255,255,255,0.5)" }}
