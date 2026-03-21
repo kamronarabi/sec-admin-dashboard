@@ -186,22 +186,8 @@ Additional goals: SQLite backups to Oracle Cloud object storage, cron-based auto
 
 ## Built with Claude
 
-This project was built collaboratively with [Claude Code](https://claude.com/claude-code) (Anthropic's AI coding agent) using a structured, multi-phase development workflow. It wasn't just "generate code" — the entire process leveraged Claude's skills and planning architecture to move from idea to production.
+This project was built collaboratively with [Claude Code](https://claude.com/claude-code) (Anthropic's AI coding agent) using a structured, multi-phase development workflow. It wasn't just "generate code" — the entire process leveraged Claude techniques like skills/plugins, subagents, and context engineering to move from idea to production.
 
-### How the collaboration worked
-
-**Brainstorming & Design** — Every major feature started with Claude's brainstorming skill, which guides a structured conversation: clarifying requirements one question at a time, proposing 2–3 approaches with tradeoffs, then iterating on a design before any code is written. The SEC dashboard's architecture — the Google Sheets pipeline, SQLite data layer, widget-based UI — all emerged from these design sessions.
-
-**Spec-Driven Planning** — Once a design was approved, Claude's planning architecture generated step-by-step implementation plans with explicit dependencies, verification checkpoints, and review gates. Each phase of the dashboard (auth, pipeline, members table, events, action items, pipeline monitor) was planned as a discrete unit with clear interfaces.
-
-**Parallel Agent Exploration** — For complex tasks, Claude dispatched multiple sub-agents in parallel to explore different parts of the codebase simultaneously — one investigating the database layer, another mapping API routes, another analyzing the frontend. This README itself was written after four parallel agents explored the architecture, pipeline, UI, and git history concurrently.
-
-**Skills & Plugins** — Claude Code's plugin system provides specialized skills for different types of work:
-
-- `frontend-design` for generating polished, production-grade UI with the SEC brand guidelines baked in
-- `test-driven-development` for writing tests before implementation
-- `systematic-debugging` for structured root-cause analysis
-- `code-review` for automated review against the implementation plan
 
 ---
 
