@@ -180,7 +180,7 @@ The pipeline is **fully idempotent** — safe to re-run at any time without dupl
 | **Phase 1** | Active  | Google Sheets pipeline, member/event/attendance dashboard, action items, pipeline monitoring |
 | **Phase 2** | Planned | Email integration + AI-powered summarization                                                 |
 | **Phase 3** | Planned | GitHub activity tracking for club repos                                                      |
-| **Phase 5** | Planned | Analytics charts, attendance trends, data exports                                            |
+| **Phase 4** | Planned | Analytics charts, attendance trends, data exports                                            |
 
 Additional goals: SQLite backups to Oracle Cloud object storage, cron-based auto-sync (every 15 min).
 
