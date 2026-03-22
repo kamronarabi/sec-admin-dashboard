@@ -110,9 +110,9 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
-  const pipelineDir = path.join(process.cwd(), "pipeline");
-  const scriptPath = path.join(pipelineDir, "sync_sheets.py");
-  const pythonPath = path.join(pipelineDir, ".venv", "bin", "python3");
+  const pipelineDir = [process.cwd(), "pipeline"].join(path.sep);
+  const scriptPath = [pipelineDir, "sync_sheets.py"].join(path.sep);
+  const pythonPath = [pipelineDir, ".venv", "bin", "python3"].join(path.sep);
 
   // 1. Snapshot current state before sync
   const beforeSnapshot = snapshotTables(db);
