@@ -35,6 +35,21 @@ function runMigrations(db: Database.Database) {
   if (!syncCols.some((c) => c.name === "diff_json")) {
     db.exec("ALTER TABLE sync_logs ADD COLUMN diff_json TEXT");
   }
+
+  // Add event_notes table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS event_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+      went_well TEXT,
+      went_wrong TEXT,
+      admin_email TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(event_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_event_notes_event ON event_notes(event_id);
+  `);
 }
 
 function initializeSchema(db: Database.Database) {

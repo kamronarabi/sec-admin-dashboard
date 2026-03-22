@@ -95,6 +95,19 @@ CREATE INDEX IF NOT EXISTS idx_attendance_event ON attendance(event_id);
 CREATE INDEX IF NOT EXISTS idx_sync_logs_source ON sync_logs(source);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
 CREATE INDEX IF NOT EXISTS idx_sync_snapshots_log ON sync_snapshots(sync_log_id);
+
+CREATE TABLE IF NOT EXISTS event_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    went_well TEXT,
+    went_wrong TEXT,
+    admin_email TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(event_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_notes_event ON event_notes(event_id);
 """
 
 

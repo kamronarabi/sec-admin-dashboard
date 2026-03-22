@@ -57,3 +57,13 @@ export interface AttendanceRecord {
   type: string;
   checked_in_at: string;
 }
+
+export interface EventNote {
+  id: number;
+  event_id: number;
+  went_well: string | null;
+  went_wrong: string | null;
+  admin_email: string;
+  created_at: string;
+  updated_at: string;
+}
