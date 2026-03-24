@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS members (
     join_date TEXT NOT NULL DEFAULT (date('now')),
     last_active TEXT NOT NULL DEFAULT (date('now')),
     status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'alumni')),
+    heard_about TEXT,
+    major TEXT,
+    year TEXT,
+    interests TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );

@@ -26,6 +26,27 @@ NAMES = [
     "Brandon Campbell", "Ella Mitchell",
 ]
 
+HEARD_ABOUT = [
+    "Instagram", "Friend", "Class announcement", "Club fair", "Discord",
+    "LinkedIn", "Flyer", "Professor referral", "Reddit", "GatorConnect",
+]
+
+MAJORS = [
+    "Computer Science", "Computer Engineering", "Data Science",
+    "Information Systems", "Electrical Engineering", "Mathematics",
+    "Mechanical Engineering", "Business Administration", "Digital Arts & Sciences",
+    "Statistics", "Physics", "Biology",
+]
+
+YEARS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"]
+
+INTEREST_OPTIONS = [
+    "Web Development", "Machine Learning", "Cybersecurity", "Mobile Dev",
+    "Cloud Computing", "Data Science", "Game Development", "AI",
+    "DevOps", "Blockchain", "Open Source", "UI/UX Design",
+    "Competitive Programming", "Embedded Systems", "Networking",
+]
+
 EVENTS = [
     ("Intro to Web Dev", "2025-09-10", "workshop", "Room 101"),
     ("First GBM", "2025-09-17", "meeting", "Auditorium"),
@@ -77,11 +98,16 @@ def seed():
         email = name.lower().replace(" ", ".") + "@ufl.edu"
         join_date = (datetime(2025, 8, 15) + timedelta(days=random.randint(0, 60))).strftime("%Y-%m-%d")
         role = roles[i] if i < len(roles) else "member"
+        heard = random.choice(HEARD_ABOUT)
+        major = random.choice(MAJORS)
+        year = random.choice(YEARS)
+        interests = ", ".join(random.sample(INTEREST_OPTIONS, random.randint(1, 4)))
 
         cursor = conn.execute(
-            """INSERT OR IGNORE INTO members (email, name, role, join_date, last_active)
-               VALUES (?, ?, ?, ?, ?)""",
-            (email, name, role, join_date, join_date),
+            """INSERT OR IGNORE INTO members (email, name, role, join_date, last_active,
+               heard_about, major, year, interests)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (email, name, role, join_date, join_date, heard, major, year, interests),
         )
         if cursor.lastrowid:
             member_ids.append(cursor.lastrowid)

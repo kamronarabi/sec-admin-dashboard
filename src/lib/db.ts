@@ -36,6 +36,15 @@ function runMigrations(db: Database.Database) {
     db.exec("ALTER TABLE sync_logs ADD COLUMN diff_json TEXT");
   }
 
+  // Add member demographic columns if they don't exist
+  const memberCols = db.prepare("PRAGMA table_info(members)").all() as { name: string }[];
+  if (!memberCols.some((c) => c.name === "heard_about")) {
+    db.exec("ALTER TABLE members ADD COLUMN heard_about TEXT");
+    db.exec("ALTER TABLE members ADD COLUMN major TEXT");
+    db.exec("ALTER TABLE members ADD COLUMN year TEXT");
+    db.exec("ALTER TABLE members ADD COLUMN interests TEXT");
+  }
+
   // Add event_notes table
   db.exec(`
     CREATE TABLE IF NOT EXISTS event_notes (
@@ -66,6 +75,10 @@ function initializeSchema(db: Database.Database) {
       join_date TEXT NOT NULL DEFAULT (date('now')),
       last_active TEXT NOT NULL DEFAULT (date('now')),
       status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'alumni')),
+      heard_about TEXT,
+      major TEXT,
+      year TEXT,
+      interests TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );

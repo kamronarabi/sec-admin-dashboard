@@ -12,6 +12,10 @@ interface MemberRow {
   events_attended: number;
   role: string;
   status: string;
+  heard_about: string | null;
+  major: string | null;
+  year: string | null;
+  interests: string | null;
 }
 
 interface EventRow {

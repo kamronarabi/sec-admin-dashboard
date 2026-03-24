@@ -10,6 +10,10 @@ export interface Member {
   join_date: string;
   last_active: string;
   status: string;
+  heard_about: string | null;
+  major: string | null;
+  year: string | null;
+  interests: string | null;
   created_at: string;
   updated_at: string;
 }

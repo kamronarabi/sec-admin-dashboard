@@ -51,8 +51,8 @@ export async function POST(request: Request) {
       // Restore members
       const membersData = JSON.parse(snapshotMap.get("members") || "[]");
       const insertMember = db.prepare(
-        `INSERT INTO members (id, email, name, discord_id, discord_username, github_username, role, events_attended, join_date, last_active, status, created_at, updated_at)
-         VALUES (@id, @email, @name, @discord_id, @discord_username, @github_username, @role, @events_attended, @join_date, @last_active, @status, @created_at, @updated_at)`
+        `INSERT INTO members (id, email, name, discord_id, discord_username, github_username, role, events_attended, join_date, last_active, status, heard_about, major, year, interests, created_at, updated_at)
+         VALUES (@id, @email, @name, @discord_id, @discord_username, @github_username, @role, @events_attended, @join_date, @last_active, @status, @heard_about, @major, @year, @interests, @created_at, @updated_at)`
       );
       for (const m of membersData) {
         insertMember.run(m);

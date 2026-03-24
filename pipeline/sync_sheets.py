@@ -150,15 +150,27 @@ def sync():
             if len(att_rows) < 2:
                 continue
 
-            # Find Name and Email columns from header
+            # Find Name, Email, and demographic columns from header
             header = [h.strip().lower() for h in att_rows[0]]
             name_col = None
             email_col = None
+            heard_col = None
+            major_col = None
+            year_col = None
+            interests_col = None
             for i, h in enumerate(header):
                 if "name" in h and name_col is None:
                     name_col = i
                 if "email" in h or "UFL email" in h:
                     email_col = i
+                if "hear" in h and "about" in h:
+                    heard_col = i
+                if h in ("major", "majors") or "major" in h:
+                    major_col = i
+                if h in ("year", "class year", "graduation year") or ("year" in h and "class" in h):
+                    year_col = i
+                if "interest" in h or "topic" in h:
+                    interests_col = i
 
             if email_col is None:
                 continue  # Can't process without email
@@ -187,6 +199,12 @@ def sync():
                     else:
                         continue  # No matching @ufl.edu member, discard
 
+                # Extract demographic fields from row
+                heard_about = row[heard_col].strip() if heard_col is not None and len(row) > heard_col and row[heard_col].strip() else None
+                major = row[major_col].strip() if major_col is not None and len(row) > major_col and row[major_col].strip() else None
+                year = row[year_col].strip() if year_col is not None and len(row) > year_col and row[year_col].strip() else None
+                interests = row[interests_col].strip() if interests_col is not None and len(row) > interests_col and row[interests_col].strip() else None
+
                 # Upsert member
                 existing_member = db.execute(
                     "SELECT id FROM members WHERE email = ?", (email,)
@@ -194,16 +212,32 @@ def sync():
 
                 if existing_member:
                     member_id = existing_member["id"]
-                    # Update name if it changed (sheets-managed)
+                    # Update name and demographic fields if provided
+                    updates = ["name=?", "updated_at=datetime('now')"]
+                    params = [name]
+                    if heard_about:
+                        updates.insert(-1, "heard_about=?")
+                        params.append(heard_about)
+                    if major:
+                        updates.insert(-1, "major=?")
+                        params.append(major)
+                    if year:
+                        updates.insert(-1, "year=?")
+                        params.append(year)
+                    if interests:
+                        updates.insert(-1, "interests=?")
+                        params.append(interests)
+                    params.append(member_id)
                     db.execute(
-                        "UPDATE members SET name=?, updated_at=datetime('now') WHERE id=?",
-                        (name, member_id),
+                        f"UPDATE members SET {', '.join(updates)} WHERE id=?",
+                        params,
                     )
                 else:
                     cursor = db.execute(
-                        """INSERT INTO members (email, name, join_date, last_active)
-                           VALUES (?, ?, date('now'), date('now'))""",
-                        (email, name),
+                        """INSERT INTO members (email, name, join_date, last_active,
+                           heard_about, major, year, interests)
+                           VALUES (?, ?, date('now'), date('now'), ?, ?, ?, ?)""",
+                        (email, name, heard_about, major, year, interests),
                     )
                     member_id = cursor.lastrowid
                     created += 1
