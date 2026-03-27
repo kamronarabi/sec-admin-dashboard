@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Pencil, X, ExternalLink } from "lucide-react";
+import { Save, Pencil, X, ExternalLink, Trash2 } from "lucide-react";
 
 export function SpreadsheetConfig() {
   const [config, setConfig] = useState<Record<string, Record<string, string | null>>>({});
@@ -248,34 +248,231 @@ export function SpreadsheetConfig() {
         </div>
       </div>
 
-      {/* Future pipelines placeholder */}
-      {["GitHub", "Gmail"].map((name) => (
-        <div
-          key={name}
-          className="rounded-lg p-4 flex items-center justify-between"
-          style={{
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.04)",
-          }}
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="text-lg">{name === "GitHub" ? "🔗" : "📧"}</span>
-            <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
-              {name}
-            </span>
-          </div>
-          <span
-            className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded"
-            style={{
-              color: "rgba(255,255,255,0.3)",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.05)",
-            }}
-          >
-            Coming Soon
+      {/* Gmail config */}
+      <GmailConfig />
+
+      {/* GitHub placeholder */}
+      <div
+        className="rounded-lg p-4 flex items-center justify-between"
+        style={{
+          background: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.04)",
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-lg">🔗</span>
+          <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
+            GitHub
           </span>
         </div>
-      ))}
+        <span
+          className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded"
+          style={{
+            color: "rgba(255,255,255,0.3)",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          Coming Soon
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function GmailConfig() {
+  const [totalEmails, setTotalEmails] = useState<number | null>(null);
+  const [oldestEmail, setOldestEmail] = useState<string | null>(null);
+  const [purging, setPurging] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [result, setResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fetchStats = async () => {
+    const res = await fetch("/api/emails/purge", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      setTotalEmails(data.totalEmails);
+      setOldestEmail(data.oldestEmail);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const handlePurge = async () => {
+    setPurging(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/emails/purge", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ olderThanDays: 30 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setResult({ type: "success", text: `Deleted ${data.deleted} email${data.deleted === 1 ? "" : "s"} older than 30 days.` });
+        await fetchStats();
+      } else {
+        const data = await res.json();
+        setResult({ type: "error", text: data.error || "Purge failed" });
+      }
+    } catch {
+      setResult({ type: "error", text: "Network error" });
+    } finally {
+      setPurging(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  const oldestFormatted = oldestEmail
+    ? new Date(oldestEmail.replace(" ", "T") + "Z").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+
+  return (
+    <div
+      className="rounded-lg overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      {/* Header */}
+      <div
+        className="relative px-4 py-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+      >
+        <div
+          className="absolute top-0 left-0 right-0 h-[1px]"
+          style={{
+            background: "linear-gradient(90deg, transparent 0%, rgba(33,150,243,0.3) 50%, transparent 100%)",
+          }}
+        />
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📧</span>
+          <h3
+            className="text-[13px] font-semibold tracking-wide"
+            style={{ color: "rgba(255,255,255,0.85)" }}
+          >
+            Gmail
+          </h3>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Stats */}
+        <div className="flex gap-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.15em] mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+              Stored Emails
+            </div>
+            <div className="text-sm font-mono font-semibold" style={{ color: "rgba(33,150,243,0.8)" }}>
+              {totalEmails !== null ? totalEmails.toLocaleString() : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.15em] mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+              Oldest Email
+            </div>
+            <div className="text-sm font-mono font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>
+              {oldestFormatted || "—"}
+            </div>
+          </div>
+        </div>
+
+        {/* Purge button / confirm */}
+        {!confirmOpen ? (
+          <button
+            onClick={() => { setConfirmOpen(true); setResult(null); }}
+            disabled={totalEmails === 0}
+            className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-md transition-all duration-200 cursor-pointer"
+            style={{
+              color: totalEmails === 0 ? "rgba(239,83,80,0.3)" : "rgba(239,83,80,0.85)",
+              border: "1px solid rgba(239,83,80,0.2)",
+              background: "rgba(239,83,80,0.06)",
+            }}
+            onMouseEnter={(e) => {
+              if (totalEmails !== 0) {
+                e.currentTarget.style.background = "rgba(239,83,80,0.12)";
+                e.currentTarget.style.borderColor = "rgba(239,83,80,0.35)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239,83,80,0.06)";
+              e.currentTarget.style.borderColor = "rgba(239,83,80,0.2)";
+            }}
+          >
+            <Trash2 size={11} />
+            Purge Old Emails
+          </button>
+        ) : (
+          <div
+            className="rounded-md p-3 space-y-2"
+            style={{
+              background: "rgba(239,83,80,0.06)",
+              border: "1px solid rgba(239,83,80,0.15)",
+            }}
+          >
+            <p className="text-[11px]" style={{ color: "rgba(239,83,80,0.85)" }}>
+              Delete all emails older than 30 days? This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePurge}
+                disabled={purging}
+                className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-md transition-all duration-200 cursor-pointer"
+                style={{
+                  color: purging ? "rgba(239,83,80,0.4)" : "#fff",
+                  background: purging ? "rgba(239,83,80,0.15)" : "rgba(239,83,80,0.7)",
+                  border: "1px solid rgba(239,83,80,0.4)",
+                }}
+              >
+                <Trash2 size={11} />
+                {purging ? "Purging..." : "Confirm Delete"}
+              </button>
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="text-[11px] px-3 py-1.5 rounded-md transition-all duration-200 cursor-pointer"
+                style={{
+                  color: "rgba(255,255,255,0.5)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Result message */}
+        {result && (
+          <div
+            className="rounded-md p-2.5 text-[12px]"
+            style={{
+              background: result.type === "success" ? "rgba(76,175,80,0.08)" : "rgba(239,83,80,0.08)",
+              border: `1px solid ${result.type === "success" ? "rgba(76,175,80,0.15)" : "rgba(239,83,80,0.15)"}`,
+              color: result.type === "success" ? "rgba(76,175,80,0.85)" : "rgba(239,83,80,0.85)",
+            }}
+          >
+            {result.text}
+          </div>
+        )}
+
+        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+          Purges emails older than 30 days. Purged emails will be re-synced on the next Gmail sync if they are still in your inbox.
+        </p>
+      </div>
     </div>
   );
 }
