@@ -52,9 +52,6 @@ export function PipelineStatusCards({ onSyncComplete }: { onSyncComplete?: () =>
     if (res.ok) {
       const data: PipelineStatus[] = await res.json();
       const filtered = data.filter((p) => p.source !== "discord");
-      if (!filtered.find((p) => p.source === "gmail")) {
-        filtered.push({ source: "gmail", latest: null, lastSuccessAt: null });
-      }
       setPipelines(filtered);
     }
   }, []);
@@ -73,7 +70,11 @@ export function PipelineStatusCards({ onSyncComplete }: { onSyncComplete?: () =>
     async (source: string) => {
       setSyncing(source);
       try {
-        const res = await fetch("/api/pipelines/sync", { method: "POST" });
+        const endpoint =
+          source === "gmail"
+            ? "/api/pipelines/sync-gmail"
+            : "/api/pipelines/sync";
+        const res = await fetch(endpoint, { method: "POST" });
         if (res.ok) {
           await fetchPipelines();
           onSyncComplete?.();
@@ -90,7 +91,7 @@ export function PipelineStatusCards({ onSyncComplete }: { onSyncComplete?: () =>
       {pipelines.map((p) => {
         const healthy = p.latest?.status === "success";
         const hasError = p.latest?.status === "failed";
-        const isActive = p.source === "google_sheets";
+        const isActive = p.source === "google_sheets" || p.source === "gmail";
 
         return (
           <div
@@ -172,7 +173,7 @@ export function PipelineStatusCards({ onSyncComplete }: { onSyncComplete?: () =>
                 )}
               </div>
 
-              {p.source === "google_sheets" && (
+              {(p.source === "google_sheets" || p.source === "gmail") && (
                 <button
                   className="mt-3 w-full flex items-center justify-center gap-1.5 text-[11px] font-medium py-1.5 rounded-md transition-all duration-200 cursor-pointer"
                   style={{

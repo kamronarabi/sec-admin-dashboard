@@ -14,6 +14,7 @@ export interface Member {
   major: string | null;
   year: string | null;
   interests: string | null;
+  mailing_list: number;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +61,32 @@ export interface AttendanceRecord {
   date: string | null;
   type: string;
   checked_in_at: string;
+}
+
+export interface Email {
+  id: number;
+  gmail_id: string;
+  thread_id: string | null;
+  from_address: string;
+  to_address: string | null;
+  subject: string | null;
+  snippet: string | null;
+  body_html: string | null;
+  received_at: string;
+  is_read: number;
+  labels: string | null;
+  synced_at: string;
+}
+
+export interface SentEmail {
+  id: number;
+  to_addresses: string;
+  subject: string;
+  body_html: string;
+  gmail_message_id: string | null;
+  sent_by: string;
+  recipient_count: number;
+  sent_at: string;
 }
 
 export interface EventNote {

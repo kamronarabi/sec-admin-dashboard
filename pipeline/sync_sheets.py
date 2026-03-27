@@ -158,10 +158,11 @@ def sync():
             major_col = None
             year_col = None
             interests_col = None
+            mailing_col = None
             for i, h in enumerate(header):
                 if "name" in h and name_col is None:
                     name_col = i
-                if "email" in h or "UFL email" in h:
+                if ("email" in h or "UFL email" in h) and email_col is None:
                     email_col = i
                 if "hear" in h and "about" in h:
                     heard_col = i
@@ -171,6 +172,8 @@ def sync():
                     year_col = i
                 if "interest" in h or "topic" in h:
                     interests_col = i
+                if "mailing list" in h and mailing_col is None:
+                    mailing_col = i
 
             if email_col is None:
                 continue  # Can't process without email
@@ -204,6 +207,9 @@ def sync():
                 major = row[major_col].strip() if major_col is not None and len(row) > major_col and row[major_col].strip() else None
                 year = row[year_col].strip() if year_col is not None and len(row) > year_col and row[year_col].strip() else None
                 interests = row[interests_col].strip() if interests_col is not None and len(row) > interests_col and row[interests_col].strip() else None
+                mailing_list = None
+                if mailing_col is not None and len(row) > mailing_col and row[mailing_col].strip():
+                    mailing_list = 1 if row[mailing_col].strip().lower() == "yes" else 0
 
                 # Upsert member
                 existing_member = db.execute(
@@ -227,6 +233,9 @@ def sync():
                     if interests:
                         updates.insert(-1, "interests=?")
                         params.append(interests)
+                    if mailing_list is not None:
+                        updates.insert(-1, "mailing_list=?")
+                        params.append(mailing_list)
                     params.append(member_id)
                     db.execute(
                         f"UPDATE members SET {', '.join(updates)} WHERE id=?",
@@ -235,9 +244,9 @@ def sync():
                 else:
                     cursor = db.execute(
                         """INSERT INTO members (email, name, join_date, last_active,
-                           heard_about, major, year, interests)
-                           VALUES (?, ?, date('now'), date('now'), ?, ?, ?, ?)""",
-                        (email, name, heard_about, major, year, interests),
+                           heard_about, major, year, interests, mailing_list)
+                           VALUES (?, ?, date('now'), date('now'), ?, ?, ?, ?, ?)""",
+                        (email, name, heard_about, major, year, interests, mailing_list if mailing_list is not None else 0),
                     )
                     member_id = cursor.lastrowid
                     created += 1

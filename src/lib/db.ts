@@ -45,6 +45,11 @@ function runMigrations(db: Database.Database) {
     db.exec("ALTER TABLE members ADD COLUMN interests TEXT");
   }
 
+  // Add mailing_list column to members if it doesn't exist
+  if (!memberCols.some((c) => c.name === "mailing_list")) {
+    db.exec("ALTER TABLE members ADD COLUMN mailing_list INTEGER DEFAULT 0");
+  }
+
   // Add event_notes table
   db.exec(`
     CREATE TABLE IF NOT EXISTS event_notes (
@@ -79,6 +84,7 @@ function initializeSchema(db: Database.Database) {
       major TEXT,
       year TEXT,
       interests TEXT,
+      mailing_list INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -161,5 +167,34 @@ function initializeSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_sync_logs_source ON sync_logs(source);
     CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
     CREATE INDEX IF NOT EXISTS idx_sync_snapshots_log ON sync_snapshots(sync_log_id);
+
+    CREATE TABLE IF NOT EXISTS emails (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      gmail_id TEXT UNIQUE NOT NULL,
+      thread_id TEXT,
+      from_address TEXT NOT NULL,
+      to_address TEXT,
+      subject TEXT,
+      snippet TEXT,
+      body_html TEXT,
+      received_at TEXT NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      labels TEXT,
+      synced_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sent_emails (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      to_addresses TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      body_html TEXT NOT NULL,
+      gmail_message_id TEXT,
+      sent_by TEXT NOT NULL,
+      recipient_count INTEGER DEFAULT 0,
+      sent_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_emails_gmail_id ON emails(gmail_id);
+    CREATE INDEX IF NOT EXISTS idx_emails_received_at ON emails(received_at);
   `);
 }

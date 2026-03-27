@@ -22,6 +22,7 @@ interface PipelineStatus {
 
 const LABELS: Record<string, string> = {
   google_sheets: "Google Sheets",
+  gmail: "Gmail",
   discord: "Discord",
   github: "GitHub",
 };
@@ -137,7 +138,7 @@ function PipelineCard({
   );
 }
 
-const SYNCABLE_SOURCES = new Set(["google_sheets"]);
+const SYNCABLE_SOURCES = new Set(["google_sheets", "gmail"]);
 
 export function PipelineMonitor() {
   const [pipelines, setPipelines] = useState<PipelineStatus[]>([]);
@@ -158,7 +159,8 @@ export function PipelineMonitor() {
     async (source: string) => {
       setSyncing(source);
       try {
-        const res = await fetch("/api/pipelines/sync", { method: "POST" });
+        const endpoint = source === "gmail" ? "/api/pipelines/sync-gmail" : "/api/pipelines/sync";
+        const res = await fetch(endpoint, { method: "POST" });
         if (!res.ok) {
           console.error("Sync failed:", res.status);
           return;

@@ -8,7 +8,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
-  const sources = ["google_sheets", "discord", "github"];
+  const sources = ["google_sheets", "discord", "github", "gmail"];
 
   const pipelines = sources.map((source) => {
     const latest = db

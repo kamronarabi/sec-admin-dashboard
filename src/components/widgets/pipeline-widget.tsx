@@ -67,7 +67,8 @@ export function PipelineWidget() {
     async (source: string) => {
       setSyncing(source);
       try {
-        const res = await fetch("/api/pipelines/sync", { method: "POST" });
+        const endpoint = source === "gmail" ? "/api/pipelines/sync-gmail" : "/api/pipelines/sync";
+        const res = await fetch(endpoint, { method: "POST" });
         if (res.ok) await fetchPipelines();
       } finally {
         setSyncing(null);
@@ -150,7 +151,7 @@ export function PipelineWidget() {
                 >
                   {syncing === p.source ? "Syncing..." : timeAgo(p.lastSuccessAt)}
                 </span>
-                {p.source === "google_sheets" && (
+                {(p.source === "google_sheets" || p.source === "gmail") && (
                   <button
                     className="text-[10px] px-2 py-0.5 rounded transition-all duration-200 cursor-pointer"
                     style={{

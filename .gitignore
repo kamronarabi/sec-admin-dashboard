@@ -54,6 +54,7 @@ next-env.d.ts
 
 # pipeline
 pipeline/service-account.json
+pipeline/client_secret.json
 
 # claude
 CLAUDE.md

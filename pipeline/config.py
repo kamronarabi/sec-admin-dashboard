@@ -48,3 +48,25 @@ SPREADSHEET_ID = get_config_from_db(
 
 # The first sheet name that contains event metadata
 EVENTS_SHEET_NAME = os.getenv("EVENTS_SHEET_NAME", "Events")
+
+# Gmail OAuth2 credentials
+GMAIL_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID", "")
+GMAIL_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET", "")
+GMAIL_REFRESH_TOKEN = os.getenv("GMAIL_REFRESH_TOKEN", "")
+
+
+def get_gmail_credentials():
+    """Return OAuth2 Credentials for the Gmail API."""
+    from google.oauth2.credentials import Credentials
+
+    return Credentials(
+        token=None,
+        refresh_token=GMAIL_REFRESH_TOKEN,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=GMAIL_CLIENT_ID,
+        client_secret=GMAIL_CLIENT_SECRET,
+        scopes=[
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.send",
+        ],
+    )

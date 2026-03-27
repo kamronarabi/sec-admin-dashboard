@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS members (
     major TEXT,
     year TEXT,
     interests TEXT,
+    mailing_list INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -112,6 +113,35 @@ CREATE TABLE IF NOT EXISTS event_notes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_event_notes_event ON event_notes(event_id);
+
+CREATE TABLE IF NOT EXISTS emails (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    gmail_id TEXT UNIQUE NOT NULL,
+    thread_id TEXT,
+    from_address TEXT NOT NULL,
+    to_address TEXT,
+    subject TEXT,
+    snippet TEXT,
+    body_html TEXT,
+    received_at TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    labels TEXT,
+    synced_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sent_emails (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    to_addresses TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body_html TEXT NOT NULL,
+    gmail_message_id TEXT,
+    sent_by TEXT NOT NULL,
+    recipient_count INTEGER DEFAULT 0,
+    sent_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_emails_gmail_id ON emails(gmail_id);
+CREATE INDEX IF NOT EXISTS idx_emails_received_at ON emails(received_at);
 """
 
 
