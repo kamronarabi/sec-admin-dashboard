@@ -21,6 +21,7 @@ A futuristic, real-time admin dashboard that automatically syncs club data from 
 | **Database**  | SQLite via `better-sqlite3` (WAL mode)                          |
 | **Auth**      | NextAuth.js · Google OAuth · Email whitelist                    |
 | **Pipeline**  | Python 3 · Google Sheets API · Service account auth             |
+| **Email**     | Gmail API · OAuth 2.0 · TipTap rich text editor                |
 | **Icons**     | Lucide React                                                    |
 
 ## Architecture
@@ -49,20 +50,22 @@ A futuristic, real-time admin dashboard that automatically syncs club data from 
 ┌─────────────────────────────────────────────────────────┐
 │            SQLite Database (WAL mode)                    │
 │   members · events · attendance · action_items           │
-│   sync_logs · admin_audit_log                            │
+│   emails · sent_emails · sync_logs · admin_audit_log     │
 └──────────────┬──────────────────┬───────────────────────┘
                ▼                  ▼
 ┌──────────────────┐  ┌──────────────────────────────────┐
 │  Server Components│  │         API Routes               │
 │  (direct DB read) │  │  /api/members · /api/events      │
 └──────────────────┘  │  /api/actions · /api/pipelines    │
+                      │  /api/emails  · /api/emails/send  │
                       │  /api/pipelines/sync              │
+                      │  /api/pipelines/sync-gmail        │
                       └──────────────┬────────────────────┘
                                      ▼
                       ┌──────────────────────────────────┐
                       │     Client Widget Components      │
                       │  Members · Events · Actions ·     │
-                      │  Pipelines (auto-refresh 30s)     │
+                      │  Email · Pipelines (auto-30s)     │
                       └──────────────────────────────────┘
 ```
 
@@ -79,6 +82,20 @@ The main interface is a single-screen widget grid — everything the club presid
 **Action Items Widget** — Priority-based task tracker (high/medium/low) with color-coded indicators. Add items with a keyboard shortcut, mark done, or dismiss. Priorities glow red, amber, or green.
 
 **Pipelines Widget** — Real-time sync health monitor. Shows status for Google Sheets, Discord, and GitHub pipelines with color-coded health dots, last sync timestamps, and a manual "Sync Now" button. Auto-refreshes every 30 seconds.
+
+### Gmail Integration
+
+The Action Items page doubles as an email hub with full Gmail integration:
+
+**Inbox Sync** — Syncs the club Gmail inbox into the local database via `pipeline/sync_gmail.py`. The inbox widget shows the 10 most recent emails with unread count, expandable message bodies, and a manual sync button.
+
+**Email Composer** — Rich text email composition powered by TipTap with formatting toolbar (bold, italic, alignment, lists, font sizes). Sends via the Gmail API using OAuth and wraps messages in a branded HTML template.
+
+**Recipient Picker** — Two modes: "Mailing List" sends to all members opted into the mailing list, or "Select Members" lets you search and pick individual recipients from the member directory.
+
+**Sent History** — Collapsible log of previously sent emails showing subject, timestamp, and recipient count.
+
+**Email Purge** — API endpoint to clean up old synced emails beyond a configurable retention period.
 
 ### Authentication
 
@@ -124,6 +141,11 @@ DATABASE_PATH=./data/sec-dashboard.db
 
 # Google Sheets sync
 SPREADSHEET_ID=your-spreadsheet-id
+
+# Gmail API (for inbox sync + sending)
+GMAIL_CLIENT_ID=your-gmail-client-id
+GMAIL_CLIENT_SECRET=your-gmail-client-secret
+GMAIL_REFRESH_TOKEN=your-gmail-refresh-token
 ```
 
 Place your Google Cloud service account JSON at `pipeline/service-account.json`.
@@ -170,19 +192,10 @@ The pipeline is **fully idempotent** — safe to re-run at any time without dupl
 | `events`          | Title, date, type, location, attendance count                               |
 | `attendance`      | Member ↔ Event join table (unique constraint)                               |
 | `action_items`    | Manual tasks with priority and status                                       |
+| `emails`          | Synced Gmail inbox messages (subject, body, read status)                    |
+| `sent_emails`     | Log of emails sent through the dashboard                                    |
 | `sync_logs`       | Audit trail for every pipeline run                                          |
 | `admin_audit_log` | Tracks admin actions                                                        |
-
-## Roadmap
-
-| Phase       | Status  | Description                                                                                  |
-| ----------- | ------- | -------------------------------------------------------------------------------------------- |
-| **Phase 1** | Active  | Google Sheets pipeline, member/event/attendance dashboard, action items, pipeline monitoring |
-| **Phase 2** | Planned | Email integration + AI-powered summarization                                                 |
-| **Phase 3** | Planned | GitHub activity tracking for club repos                                                      |
-| **Phase 4** | Planned | Analytics charts, attendance trends, data exports                                            |
-
-Additional goals: SQLite backups to Oracle Cloud object storage, cron-based auto-sync (every 15 min).
 
 ## Built with Claude
 
