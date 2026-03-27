@@ -8,6 +8,27 @@ import type { ActionItem } from "@/lib/types";
 import { InboxWidget } from "@/components/email/inbox-widget";
 import { EmailComposer } from "@/components/email/email-composer";
 
+const PRIORITY_STYLES: Record<string, { color: string; bg: string; border: string; glow: string }> = {
+  high: {
+    color: "rgba(239,83,80,0.9)",
+    bg: "rgba(239,83,80,0.08)",
+    border: "rgba(239,83,80,0.25)",
+    glow: "0 0 8px rgba(239,83,80,0.12)",
+  },
+  medium: {
+    color: "rgba(255,183,77,0.9)",
+    bg: "rgba(255,183,77,0.08)",
+    border: "rgba(255,183,77,0.25)",
+    glow: "0 0 8px rgba(255,183,77,0.12)",
+  },
+  low: {
+    color: "rgba(76,175,80,0.9)",
+    bg: "rgba(76,175,80,0.08)",
+    border: "rgba(76,175,80,0.25)",
+    glow: "0 0 8px rgba(76,175,80,0.12)",
+  },
+};
+
 function GlassPanel({
   children,
   className = "",
@@ -41,6 +62,7 @@ export default function ActionItemsPage() {
   const router = useRouter();
   const [items, setItems] = useState<ActionItem[]>([]);
   const [newTitle, setNewTitle] = useState("");
+  const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
   const [loading, setLoading] = useState(true);
 
   const fetchItems = useCallback(async () => {
@@ -58,9 +80,10 @@ export default function ActionItemsPage() {
     await fetch("/api/actions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle.trim() }),
+      body: JSON.stringify({ title: newTitle.trim(), priority }),
     });
     setNewTitle("");
+    setPriority("medium");
     fetchItems();
   };
 
@@ -174,6 +197,29 @@ export default function ActionItemsPage() {
                     e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
                   }}
                 />
+                {/* Priority selector */}
+                <div className="flex items-center gap-0.5">
+                  {(["high", "medium", "low"] as const).map((p) => {
+                    const s = PRIORITY_STYLES[p];
+                    const isActive = priority === p;
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => setPriority(p)}
+                        className="text-[9px] font-semibold px-2 py-1.5 rounded-md transition-all duration-150 uppercase tracking-wider cursor-pointer"
+                        style={{
+                          color: isActive ? s.color : "rgba(255,255,255,0.2)",
+                          background: isActive ? s.bg : "transparent",
+                          border: `1px solid ${isActive ? s.border : "rgba(255,255,255,0.04)"}`,
+                          boxShadow: isActive ? s.glow : "none",
+                        }}
+                        title={`${p} priority`}
+                      >
+                        {p[0].toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
                 <button
                   onClick={addItem}
                   className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 rounded-md transition-all duration-150 cursor-pointer"
@@ -218,41 +264,47 @@ export default function ActionItemsPage() {
                   </div>
                 ) : (
                   <>
-                    {pendingItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-md group transition-all duration-100"
-                        style={{ background: "rgba(255,255,255,0.02)" }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                        }}
-                      >
-                        <Checkbox
-                          checked={false}
-                          onCheckedChange={() => toggleItem(item)}
-                        />
-                        <span
-                          className="flex-1 text-[12px]"
-                          style={{ color: "rgba(255,255,255,0.75)" }}
+                    {pendingItems.map((item) => {
+                      const pStyle = PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.medium;
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-2.5 px-2.5 py-2 rounded-md group transition-all duration-100"
+                          style={{
+                            background: "rgba(255,255,255,0.02)",
+                            border: `1px solid ${pStyle.border}`,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                          }}
                         >
-                          {item.title}
-                        </span>
-                        {item.due_date && (
-                          <span className="text-[9px] font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
-                            {item.due_date}
+                          <Checkbox
+                            checked={false}
+                            onCheckedChange={() => toggleItem(item)}
+                          />
+                          <span
+                            className="flex-1 text-[12px]"
+                            style={{ color: "rgba(255,255,255,0.75)" }}
+                          >
+                            {item.title}
                           </span>
-                        )}
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        >
-                          <Trash2 size={11} color="rgba(239,83,80,0.6)" />
-                        </button>
-                      </div>
-                    ))}
+                          {item.due_date && (
+                            <span className="text-[9px] font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
+                              {item.due_date}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => deleteItem(item.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            <Trash2 size={11} color="rgba(239,83,80,0.6)" />
+                          </button>
+                        </div>
+                      );
+                    })}
                     {doneItems.length > 0 && (
                       <>
                         <div
